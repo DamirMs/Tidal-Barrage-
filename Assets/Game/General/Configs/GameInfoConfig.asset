@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e022b703b31e4675b776885ceb4e9a39, type: 3}
+  m_Name: GameInfoConfig
+  m_EditorClassIdentifier: 
+  conditionMetDelay: 0.6
+  gameOverDelay: 0.001
+  resetsInputAfterRelease: 0
+  loadingAnimationDuration: 0
+  orientationMode: 0
+  interactablesCountableDefaultValues:
+    keys: 000000000100000002000000
+    values:
+    - {x: 15, y: 20}
+    - {x: 20, y: 30}
+    - {x: 5, y: 15}
+  interactablesCountableCoefficients:
+    keys: 000000000100000002000000
+    values:
+    - 1.1
+    - 1.1
+    - 1.1
+  goldAmountFromBalls: 16
+  goldAmountForUpgrade: 100

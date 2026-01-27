@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &7235078588011851226
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 153703427683757075}
+  - component: {fileID: 3389117243703785010}
+  m_Layer: 0
+  m_Name: FloatingDeltaTexts
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &153703427683757075
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7235078588011851226}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 249.7235, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &3389117243703785010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7235078588011851226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f6b6525e3d5b42c3ad63b3ed6b13612f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textPrefab: {fileID: 7641302283149904348, guid: 65c407bcc839c29448b603a1068fad15, type: 3}
+  textsParent: {fileID: 153703427683757075}
+  targetRect: {fileID: 0}
+  addColor: {r: 0, g: 1, b: 0, a: 1}
+  subtractColor: {r: 1, g: 0, b: 0, a: 1}
+  spawnBelowTarget: 70
+  popupScale: 2
+  popupTime: 0.15
+  moveTime: 0.35
+  randomOffsetX: {x: -50, y: 50}
+  randomScale: {x: 1.1839349, y: 1.3839351}
+  randomAlpha: {x: 0.6, y: 0.8}
+  offsetXPerActive: 25
+  maxOffsetMultiplier: 5

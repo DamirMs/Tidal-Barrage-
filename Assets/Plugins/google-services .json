@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "994002679677",
+    "project_id": "tidal-barrage123",
+    "storage_bucket": "tidal-barrage123.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994002679677:android:573b6027df0ef20686be14",
+        "android_client_info": {
+          "package_name": "com.ANS.TidalBarrage"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyF7LDGjY84LU-ddun4nVMYJDp7-2J8js"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
