@@ -1012,7 +1012,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 448750d1283f7a94cb6ac92c6ce5e94a, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2280115a3be4de64788106c90fffa60b, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -1452,6 +1452,7 @@ MonoBehaviour:
   totalScoreText:
     additionalText: 
     scoreText: {fileID: 2597779614775803533}
+  totalScoreDeltaTexts: {fileID: 0}
   bestScoreText:
     additionalText: 
     scoreText: {fileID: 8500676796329283568}

@@ -668,6 +668,10 @@ PrefabInstance:
       propertyPath: m_SizeDelta.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6301446994999580204, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6958186800276434883, guid: 289d27bdd371de645ae592f620313850, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
