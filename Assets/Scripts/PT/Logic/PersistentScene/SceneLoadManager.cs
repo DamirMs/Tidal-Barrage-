@@ -12,6 +12,7 @@ namespace PT.Logic.PersistentScene
     {
         Menu = 1, 
         Game = 2,
+        Loader = 3,
     }
 
     public class SceneLoadManager : MonoBehaviourEventListener

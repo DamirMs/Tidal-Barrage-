@@ -11,7 +11,7 @@ namespace Gameplay.General.PersistentScene
 
         private void Start()
         {
-            _sceneLoadManager.LoadScene(SceneNameEnum.Menu).Forget();
+            _sceneLoadManager.LoadScene(SceneNameEnum.Loader).Forget();
         }
     }
 }
