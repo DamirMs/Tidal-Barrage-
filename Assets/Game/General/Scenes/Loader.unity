@@ -650,11 +650,27 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 209698041}
     m_Modifications:
+    - target: {fileID: 194101841831464483, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_fontAsset
+      value: 
+      objectReference: {fileID: 11400000, guid: d15befb09cc852c4c9fca12fa6d93e7b, type: 2}
+    - target: {fileID: 194101841831464483, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_sharedMaterial
+      value: 
+      objectReference: {fileID: -4618481108740746477, guid: d15befb09cc852c4c9fca12fa6d93e7b, type: 2}
+    - target: {fileID: 194101841831464483, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_hasFontAssetChanged
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1986693314045803457, guid: 289d27bdd371de645ae592f620313850, type: 3}
       propertyPath: m_Name
       value: Loading
       objectReference: {fileID: 0}
     - target: {fileID: 1986693314045803457, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4826474963724564340, guid: 289d27bdd371de645ae592f620313850, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -673,6 +689,22 @@ PrefabInstance:
     - target: {fileID: 4915754774014908372, guid: 289d27bdd371de645ae592f620313850, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5575747465908248444, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6335445180173007275, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: a0cfb2128dad807489be8b08cc54ea78, type: 3}
+    - target: {fileID: 6406237447308975596, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 853.1344
+      objectReference: {fileID: 0}
+    - target: {fileID: 6406237447308975596, guid: 289d27bdd371de645ae592f620313850, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 598.9345
       objectReference: {fileID: 0}
     - target: {fileID: 6958186800276434883, guid: 289d27bdd371de645ae592f620313850, type: 3}
       propertyPath: m_Pivot.x
