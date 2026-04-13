@@ -73,8 +73,8 @@ namespace Gameplay.Current.Ball_Blast.Balls
 
             rb.AddForce(Vector2.down * fallForce, ForceMode2D.Force);
 
-            if (rb.velocity.y < -maxFallSpeed)
-                rb.velocity = new Vector2(rb.velocity.x, -maxFallSpeed);
+            if (rb.linearVelocity.y < -maxFallSpeed)
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, -maxFallSpeed);
         }
 
         public void Push(Vector2 direction, float power)

@@ -22,7 +22,7 @@ namespace Gameplay.Current.Ball_Blast.Bullets
 
         private void OnDisable()
         {
-            rb.velocity = Vector2.zero;
+            rb.linearVelocity = Vector2.zero;
 
             transform.localScale = Vector2.one; //or to initial scale
         }
