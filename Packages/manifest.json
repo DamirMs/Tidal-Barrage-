@@ -2,10 +2,9 @@
   "dependencies": {
     "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
     "com.unity.ads.ios-support": "1.0.1",
-    "com.unity.feature.2d": "2.0.2",
-    "com.unity.ide.rider": "3.0.39",
     "com.unity.inputsystem": "1.19.0",
     "com.unity.nuget.newtonsoft-json": "3.2.2",
+    "com.unity.test-framework": "1.6.0",
     "com.unity.ugui": "2.0.0",
     "com.unity.modules.accessibility": "1.0.0",
     "com.unity.modules.adaptiveperformance": "1.0.0",
