@@ -5,18 +5,18 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Game/General/Scenes/PersistentScene.unity
     guid: 19e5ae7cfb55d524eba5bc86b26787fe
-  - enabled: 1
+  - enabled: 0
     path: Assets/Game/General/Scenes/MenuScene.unity
     guid: 3fc8acdd13e6c734bafef6554d6fdbcd
-  - enabled: 1
+  - enabled: 0
     path: Assets/Game/General/Scenes/GameScene.unity
     guid: 23aecf7b26e9c9b4aba2b76da77a1612
-  - enabled: 0
-    path: Assets/Game/General/Scenes/Loader.unity
-    guid: beed7752b932753439cce4ae46e303e6
+  - enabled: 1
+    path: Assets/Scenes/SampleScene.unity
+    guid: 9fc0d4010bbf28b4594072e72b8655ab
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: dc9a2925c3e210243bed5244b124f2d3, type: 2}
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 9992f2f2ac9070d48afc78addb5c412a, type: 2}
