@@ -27,6 +27,8 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
     NSString *afId = [PLServicesWrapper appsFlyerDeviceId];
     if (afId.length)  body[@"af_id"] = afId;
 
+    body[@"locale"] = [NSLocale preferredLanguages].firstObject ?: @"en";
+
     NSString *firebaseProject = [PLServicesWrapper firebaseProjectId];
     if (firebaseProject.length) body[@"firebase_project_id"] = firebaseProject;
     body[@"push_token"] = pushToken;
@@ -106,6 +108,8 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
 @property (atomic, assign) BOOL notificationPromptShownThisSession;
 // Prevent repeated endpoint refresh attempts during a single preload run
 @property (atomic, assign) BOOL endpointRefreshAttempted;
+/// Используется для отображения ошибки подключения без presentViewController
+@property (nonatomic, strong) UIView *noInternetView;
 
 @end
 
@@ -122,6 +126,7 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
     [super viewDidLoad];
     [self pl_setupBackground];
     [self pl_setupLogoAndSpinner];
+    [self pl_setupNoInternetView];
 }
 
 - (void)viewDidLayoutSubviews
@@ -141,20 +146,55 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
 - (void)startChecks
 {
     self.attributionData = nil;
+    self.noInternetView.hidden = YES;
     [_spinner startAnimating];
+
+    // ── Push-путь: приложение открыто тапом по уведомлению с URL ──────────────
+    if (self.pendingPushURL) {
+        NSURL *pushURL = self.pendingPushURL;
+        self.pendingPushURL = nil; // Сбрасываем после обработки
+        NSLog(@"[PreloadVC] Using push URL: %@", pushURL);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (self.onOpenURL) self.onOpenURL(pushURL);
+            [self->_spinner stopAnimating];
+        });
+        return;
+    }
+
+    // Убедимся, что цепочка запуска не выполняется при наличии URL из пуша
+    NSLog(@"[PreloadVC] No pending push URL, proceeding with config chain");
 
     // ── Быстрый путь: режим запуска уже определён при предыдущем запуске ──
     NSString *savedMode = [[NSUserDefaults standardUserDefaults] stringForKey:@"PLLaunchMode"];
 
     if ([savedMode isEqualToString:@"unity"]) {
-        NSLog(@"[PreloadVC] Saved launch mode: Unity — launching directly");
-        dispatch_async(dispatch_get_main_queue(), ^{
+        NSLog(@"[PreloadVC] Saved launch mode: Unity — waiting briefly for pending push before launch");
+        // Задержка 0.5с даёт iOS время доставить didReceiveNotificationResponse
+        // до того как мы зафиксируем запуск Unity.
+        // На старте через push didReceiveNotificationResponse приходит чуть позже viewDidAppear,
+        // и без задержки unity fast path успевает вызвать onComplete раньше.
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
+            if (self.pendingPushURL) {
+                // Push пришёл пока ждали — открываем WebView вместо Unity
+                NSURL *pushURL = self.pendingPushURL;
+                self.pendingPushURL = nil;
+                NSLog(@"[PreloadVC] Push URL intercepted before Unity launch — switching to WebView: %@", pushURL);
+                [[NSUserDefaults standardUserDefaults] setObject:@"webview" forKey:@"PLLaunchMode"];
+                [[NSUserDefaults standardUserDefaults] synchronize];
+                [self pl_checkAndAskNotificationsIfNeededWithCompletion:^{
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self->_spinner stopAnimating];
+                        if (self.onOpenURL) self.onOpenURL(pushURL);
+                    });
+                }];
+                return;
+            }
             [self->_spinner stopAnimating];
             if (self.onComplete) self.onComplete();
         });
         return;
     }
-
     // webview или первый запуск — всегда пробуем получить свежий URL через полную цепочку.
     // Сохранённый URL используется только как fallback внутри цепочки при ошибках.
     if (savedMode) {
@@ -225,6 +265,87 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
         [_spinner.centerXAnchor constraintEqualToAnchor:v.centerXAnchor],
         [_spinner.topAnchor     constraintEqualToAnchor:_logoImageView.bottomAnchor constant:24],
     ]];
+}
+
+- (void)pl_setupNoInternetView
+{
+    UIView *container = [[UIView alloc] init];
+    container.translatesAutoresizingMaskIntoConstraints = NO;
+    container.hidden = YES;
+    [self.view addSubview:container];
+
+    UIImageView *iconView = [[UIImageView alloc] init];
+    if (@available(iOS 13.0, *)) {
+        UIImageSymbolConfiguration *cfg = [UIImageSymbolConfiguration
+            configurationWithPointSize:52 weight:UIImageSymbolWeightLight];
+        iconView.image = [UIImage systemImageNamed:@"wifi.slash" withConfiguration:cfg];
+    }
+    iconView.tintColor = [UIColor colorWithWhite:0.85 alpha:1.0];
+    iconView.contentMode = UIViewContentModeScaleAspectFit;
+    iconView.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:iconView];
+
+    UILabel *titleLabel = [[UILabel alloc] init];
+    titleLabel.text = @"No Internet Connection";
+    titleLabel.textColor = [UIColor whiteColor];
+    titleLabel.font = [UIFont boldSystemFontOfSize:20];
+    titleLabel.textAlignment = NSTextAlignmentCenter;
+    titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:titleLabel];
+
+    UILabel *messageLabel = [[UILabel alloc] init];
+    messageLabel.text = @"Please check your network settings\nand try again.";
+    messageLabel.textColor = [UIColor colorWithWhite:0.75 alpha:1.0];
+    messageLabel.font = [UIFont systemFontOfSize:15];
+    messageLabel.textAlignment = NSTextAlignmentCenter;
+    messageLabel.numberOfLines = 0;
+    messageLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    [container addSubview:messageLabel];
+
+    UIButton *retryButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [retryButton setTitle:@"Retry" forState:UIControlStateNormal];
+    retryButton.titleLabel.font = [UIFont boldSystemFontOfSize:17];
+    [retryButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    retryButton.backgroundColor = [UIColor colorWithRed:0.20 green:0.48 blue:1.0 alpha:1.0];
+    retryButton.layer.cornerRadius = 14;
+    retryButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [retryButton addTarget:self
+                    action:@selector(pl_retryButtonTapped)
+          forControlEvents:UIControlEventTouchUpInside];
+    [container addSubview:retryButton];
+
+    [NSLayoutConstraint activateConstraints:@[
+        [container.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+        [container.centerYAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.centerYAnchor],
+        [container.leadingAnchor constraintGreaterThanOrEqualToAnchor:self.view.leadingAnchor constant:40],
+        [container.trailingAnchor constraintLessThanOrEqualToAnchor:self.view.trailingAnchor constant:-40],
+
+        [iconView.topAnchor constraintEqualToAnchor:container.topAnchor],
+        [iconView.centerXAnchor constraintEqualToAnchor:container.centerXAnchor],
+        [iconView.widthAnchor constraintEqualToConstant:56],
+        [iconView.heightAnchor constraintEqualToConstant:56],
+
+        [titleLabel.topAnchor constraintEqualToAnchor:iconView.bottomAnchor constant:16],
+        [titleLabel.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [titleLabel.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+
+        [messageLabel.topAnchor constraintEqualToAnchor:titleLabel.bottomAnchor constant:10],
+        [messageLabel.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
+        [messageLabel.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
+
+        [retryButton.topAnchor constraintEqualToAnchor:messageLabel.bottomAnchor constant:28],
+        [retryButton.centerXAnchor constraintEqualToAnchor:container.centerXAnchor],
+        [retryButton.widthAnchor constraintEqualToConstant:160],
+        [retryButton.heightAnchor constraintEqualToConstant:52],
+        [retryButton.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
+    ]];
+
+    self.noInternetView = container;
+}
+
+- (void)pl_retryButtonTapped
+{
+    [self startChecks];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -370,18 +491,16 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
     if (@available(iOS 10.0, *)) {
         UNUserNotificationCenter *center = [UNUserNotificationCenter currentNotificationCenter];
         [center getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings * _Nonnull settings) {
+            UNAuthorizationStatus currentStatus = settings.authorizationStatus;
             BOOL shouldRequest = NO;
-            if (settings.authorizationStatus == UNAuthorizationStatusNotDetermined) {
-                shouldRequest = YES;
-            } else if (settings.authorizationStatus == UNAuthorizationStatusDenied) {
+            if (currentStatus == UNAuthorizationStatusNotDetermined ||
+                currentStatus == UNAuthorizationStatusDenied) {
                 NSDate *lastDenied = [[NSUserDefaults standardUserDefaults] objectForKey:@"PLLastNotificationDeniedAt"];
                 if (!lastDenied) {
                     shouldRequest = YES;
                 } else {
                     NSTimeInterval since = [[NSDate date] timeIntervalSinceDate:lastDenied];
-                    if (since >= (3 * 24 * 60 * 60)) {
-                        shouldRequest = YES; // прошло 3 дня
-                    }
+                    shouldRequest = (since >= (3 * 24 * 60 * 60)); // 3 дня
                 }
             }
 
@@ -410,21 +529,29 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
                         strongSelf.notificationPromptShownThisSession = YES;
                         [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"PLAskedForNotifications"];
                         [[NSUserDefaults standardUserDefaults] synchronize];
-                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                            UNAuthorizationOptions opts = (UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert);
-                            [center requestAuthorizationWithOptions:opts completionHandler:^(BOOL granted, NSError * _Nullable err) {
-                                if (!granted) {
-                                    [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:@"PLLastNotificationDeniedAt"];
-                                } else {
-                                    [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"PLLastNotificationDeniedAt"];
-                                }
-                                [[NSUserDefaults standardUserDefaults] synchronize];
-                                dispatch_async(dispatch_get_main_queue(), ^{
-                                    strongSelf.isPresentingNotificationPrompt = NO;
-                                    completion();
-                                });
-                            }];
-                        });
+                        if (currentStatus == UNAuthorizationStatusDenied) {
+                            // Системное разрешение уже отозвано — iOS не покажет диалог повторно
+                            [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"PLLastNotificationDeniedAt"];
+                            [[NSUserDefaults standardUserDefaults] synchronize];
+                            strongSelf.isPresentingNotificationPrompt = NO;
+                            completion();
+                        } else {
+                            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.35 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                                UNAuthorizationOptions opts = (UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert);
+                                [center requestAuthorizationWithOptions:opts completionHandler:^(BOOL granted, NSError * _Nullable err) {
+                                    if (!granted) {
+                                        [[NSUserDefaults standardUserDefaults] setObject:[NSDate date] forKey:@"PLLastNotificationDeniedAt"];
+                                    } else {
+                                        [[NSUserDefaults standardUserDefaults] removeObjectForKey:@"PLLastNotificationDeniedAt"];
+                                    }
+                                    [[NSUserDefaults standardUserDefaults] synchronize];
+                                    dispatch_async(dispatch_get_main_queue(), ^{
+                                        strongSelf.isPresentingNotificationPrompt = NO;
+                                        completion();
+                                    });
+                                }];
+                            });
+                        }
                     }
                     cancelHandler:^{
                         __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -501,6 +628,8 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
     // af_id — AppsFlyer Device ID (обязателен во всех запросах)
     NSString *afId = [PLServicesWrapper appsFlyerDeviceId];
     if (afId.length) body[@"af_id"] = afId;
+
+    body[@"locale"] = [NSLocale preferredLanguages].firstObject ?: @"en";
 
     // Данные атрибуции AppsFlyerr
     // Передаём данные конверсии AppsFlyer без изменений, если они есть.
@@ -645,6 +774,25 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
 /// `url != nil`  → показываем WebView (onOpenURL) — сначала запрашиваем уведомления (если не спрашивали в эту сессию)
 - (void)pl_finishWithURL:(nullable NSURL *)url
 {
+    // ── Push-приоритет: если во время цепочки пришёл пуш с URL — используем его ──
+    if (self.pendingPushURL) {
+        NSURL *pushURL = self.pendingPushURL;
+        self.pendingPushURL = nil; // Сбрасываем после обработки
+        NSLog(@"[PreloadVC] Push URL received during chain — overriding server URL with: %@", pushURL);
+        // Сохраняем режим запуска
+        if (![[NSUserDefaults standardUserDefaults] stringForKey:@"PLLaunchMode"]) {
+            [[NSUserDefaults standardUserDefaults] setObject:@"webview" forKey:@"PLLaunchMode"];
+            [[NSUserDefaults standardUserDefaults] synchronize];
+        }
+        [self pl_checkAndAskNotificationsIfNeededWithCompletion:^{
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self->_spinner stopAnimating];
+                if (self.onOpenURL) self.onOpenURL(pushURL);
+            });
+        }];
+        return;
+    }
+
     [self pl_updateStatus:@"Done!" detail:nil progress:1.00];
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)),
@@ -729,18 +877,8 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
 
     dispatch_async(dispatch_get_main_queue(), ^{
         [self pl_updateStatus:@"No connection" detail:nil progress:0.0];
-
-        UIAlertController *alert =
-            [UIAlertController alertControllerWithTitle:@"No Internet Connection"
-                                                message:@"Please check your network settings and try again."
-                                         preferredStyle:UIAlertControllerStyleAlert];
-        [alert addAction:
-            [UIAlertAction actionWithTitle:@"Retry"
-                                     style:UIAlertActionStyleDefault
-                                   handler:^(UIAlertAction *a) {
-                [self startChecks];
-            }]];
-        [self presentViewController:alert animated:YES completion:nil];
+        [self->_spinner stopAnimating];
+        self.noInternetView.hidden = NO;
     });
 }
 
