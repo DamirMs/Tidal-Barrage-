@@ -774,29 +774,33 @@ static void PL_sendFirebaseFields(NSString *endpointURL)
 /// `url != nil`  → показываем WebView (onOpenURL) — сначала запрашиваем уведомления (если не спрашивали в эту сессию)
 - (void)pl_finishWithURL:(nullable NSURL *)url
 {
-    // ── Push-приоритет: если во время цепочки пришёл пуш с URL — используем его ──
-    if (self.pendingPushURL) {
-        NSURL *pushURL = self.pendingPushURL;
-        self.pendingPushURL = nil; // Сбрасываем после обработки
-        NSLog(@"[PreloadVC] Push URL received during chain — overriding server URL with: %@", pushURL);
-        // Сохраняем режим запуска
-        if (![[NSUserDefaults standardUserDefaults] stringForKey:@"PLLaunchMode"]) {
-            [[NSUserDefaults standardUserDefaults] setObject:@"webview" forKey:@"PLLaunchMode"];
-            [[NSUserDefaults standardUserDefaults] synchronize];
-        }
-        [self pl_checkAndAskNotificationsIfNeededWithCompletion:^{
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self->_spinner stopAnimating];
-                if (self.onOpenURL) self.onOpenURL(pushURL);
-            });
-        }];
-        return;
-    }
-
     [self pl_updateStatus:@"Done!" detail:nil progress:1.00];
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
+        // ── Push-приоритет: проверяем на главном потоке после небольшой задержки. ──
+        // pl_finishWithURL: вызывается из фонового потока (URLSession completion), поэтому
+        // проверять pendingPushURL там небезопасно — didReceiveNotificationResponse: устанавливает
+        // его через dispatch_async(main_queue) и этот блок может ещё не выполниться.
+        // Проверка здесь, на main queue через 0.3с, гарантирует что пуш уже обработан.
+        if (self.pendingPushURL) {
+            NSURL *pushURL = self.pendingPushURL;
+            self.pendingPushURL = nil;
+            NSLog(@"[PreloadVC] Push URL received during chain — overriding server URL with: %@", pushURL);
+            // Сохраняем режим запуска
+            if (![[NSUserDefaults standardUserDefaults] stringForKey:@"PLLaunchMode"]) {
+                [[NSUserDefaults standardUserDefaults] setObject:@"webview" forKey:@"PLLaunchMode"];
+                [[NSUserDefaults standardUserDefaults] synchronize];
+            }
+            [self->_spinner stopAnimating];
+            [self pl_checkAndAskNotificationsIfNeededWithCompletion:^{
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (self.onOpenURL) self.onOpenURL(pushURL);
+                });
+            }];
+            return;
+        }
+
         [self->_spinner stopAnimating];
 
         // Для WebView-пути: если config.php не вернул URL — используем последний сохранённый

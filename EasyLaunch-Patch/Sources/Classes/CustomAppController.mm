@@ -62,6 +62,7 @@
     }
 
     if (![urlStr isKindOfClass:[NSString class]] || urlStr.length == 0) return nil;
+    if (![urlStr hasSuffix:@"/"]) urlStr = [urlStr stringByAppendingString:@"/"];
     return [NSURL URLWithString:urlStr];
 }
 

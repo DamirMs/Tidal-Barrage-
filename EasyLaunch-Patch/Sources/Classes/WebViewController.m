@@ -16,6 +16,8 @@
 @property (nonatomic, strong) NSMutableArray<NSURLRequest *> *redirectRequests;
 @property (nonatomic, assign) NSInteger provisionalRetryCount;
 @property (nonatomic, assign) NSInteger maxProvisionalRetries;
+// Retry counter for didFailNavigation (non-TooManyRedirects) to prevent infinite loops
+@property (nonatomic, assign) NSInteger failRetryCount;
 
 @end
 
@@ -193,7 +195,17 @@
             [self startFallbackLoadForURL:self.url];
         }
     } else {
-        // For other transient network errors, try a straight reload after a short delay
+        // For other transient network errors, retry with a cap to avoid infinite loops.
+        // This covers cases where a 301/302 redirect destination is temporarily unreachable.
+        const NSInteger kMaxFailRetries = 3;
+        if (self.failRetryCount >= kMaxFailRetries) {
+            NSLog(@"[WebViewController] navigation error: retry cap reached, switching to fallback");
+            if (!self.fallbackInProgress && self.url) {
+                [self startFallbackLoadForURL:self.url];
+            }
+            return;
+        }
+        self.failRetryCount++;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
             NSURL *target = webView.URL ?: self.url;
             if (target) {
@@ -300,14 +312,23 @@
         if (!self.fallbackInProgress && self.url) {
             [self startFallbackLoadForURL:self.url];
         }
+    } else {
+        // Non-TooManyRedirects provisional failure: DNS fail, SSL error, connection refused, etc.
+        // Commonly happens when a 301/302 redirect destination is unreachable.
+        // Go straight to NSURLSession fallback which manually follows the redirect chain.
+        NSLog(@"[WebViewController] provisional navigation failed with non-redirect error — using fallback loader");
+        if (!self.fallbackInProgress && self.url) {
+            [self startFallbackLoadForURL:self.url];
+        }
     }
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation
 {
     NSLog(@"[WebViewController] finished loading: %@", webView.URL);
-    // Reset retry counter after a successful load
+    // Reset retry counters after a successful load
     self.provisionalRetryCount = 0;
+    self.failRetryCount = 0;
     // WKWebView resets scrollView delegate and zoom limits after each load — restore them
     webView.scrollView.delegate = self;
     webView.scrollView.minimumZoomScale = 1.0;
